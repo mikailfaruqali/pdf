@@ -1191,7 +1191,62 @@
                                 </div>
                             </div>
 
-                            <!-- 6. Runtime CSS Variables -->
+                            <!-- 6. Viewer UI & Fonts (when inline preview with viewer is used) -->
+                            <div class="sn-form-card">
+                                <div class="sn-form-card__title">
+                                    <i class="fa-solid fa-desktop ic-primary"></i> Viewer UI & Fonts
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="opt_with_viewer">Built-in PDF Viewer</label>
+                                        <select id="opt_with_viewer" class="form-select sn-select2">
+                                            <option value="">Default (Disabled)</option>
+                                            <option value="1">Enabled</option>
+                                            <option value="0">Disabled</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label" for="opt_theme">Viewer Theme</label>
+                                        <select id="opt_theme" class="form-select sn-select2">
+                                            <option value="">Default (Dark)</option>
+                                            <option value="dark">Dark</option>
+                                            <option value="light">Light</option>
+                                            <option value="auto">Auto (Follow OS)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label" for="opt_dir">Direction</label>
+                                        <select id="opt_dir" class="form-select sn-select2">
+                                            <option value="">Default (LTR)</option>
+                                            <option value="ltr">LTR</option>
+                                            <option value="rtl">RTL</option>
+                                            <option value="auto">Auto</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="opt_icon">Favicon / Icon</label>
+                                        <input type="text" id="opt_icon" class="form-control" placeholder="Emoji (📄), image URL, data: URI, or absolute path">
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="opt_font_family">Font Family</label>
+                                        <input type="text" id="opt_font_family" class="form-control" placeholder="e.g. Noto Sans, Rabar">
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="opt_font_path">Font File Path</label>
+                                        <input type="text" id="opt_font_path" class="form-control" placeholder="e.g. storage/fonts/NotoSans-Regular.ttf">
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="opt_font_stack">Font Stack (CSS)</label>
+                                        <input type="text" id="opt_font_stack" class="form-control" placeholder="e.g. 'Rabar', 'Noto Sans Arabic', sans-serif">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 7. Runtime CSS Variables -->
                             <div class="sn-form-card">
                                 <div class="sn-form-card__title">
                                     <i class="fa-solid fa-palette ic-primary"></i> Runtime CSS Variables
@@ -1273,6 +1328,24 @@
             });
 
             $('#opt_watermark_behind').select2({
+                dropdownParent: $('#templateModal'),
+                minimumResultsForSearch: Infinity,
+                allowClear: false
+            });
+
+            $('#opt_with_viewer').select2({
+                dropdownParent: $('#templateModal'),
+                minimumResultsForSearch: Infinity,
+                allowClear: false
+            });
+
+            $('#opt_theme').select2({
+                dropdownParent: $('#templateModal'),
+                minimumResultsForSearch: Infinity,
+                allowClear: false
+            });
+
+            $('#opt_dir').select2({
                 dropdownParent: $('#templateModal'),
                 minimumResultsForSearch: Infinity,
                 allowClear: false
@@ -1412,6 +1485,14 @@
                 if ($('#opt_page_offset').val()) opts['pageOffset'] = parseInt($('#opt_page_offset').val(), 10);
                 if ($('#opt_total_offset').val()) opts['totalOffset'] = parseInt($('#opt_total_offset').val(), 10);
 
+                if ($('#opt_with_viewer').val() !== '') opts['withViewer'] = $('#opt_with_viewer').val() === '1';
+                add('theme', $('#opt_theme').val());
+                add('dir', $('#opt_dir').val());
+                add('icon', $('#opt_icon').val());
+                add('fontFamily', $('#opt_font_family').val());
+                add('fontPath', $('#opt_font_path').val());
+                add('fontStack', $('#opt_font_stack').val());
+
                 add('contentHtml', $('#opt_content_html').val());
 
                 var cssVariables = collectCssVariables();
@@ -1464,6 +1545,15 @@
                     $('#opt_page_offset').val(opts.pageOffset !== undefined ? opts.pageOffset : '');
                     $('#opt_total_offset').val(opts.totalOffset !== undefined ? opts.totalOffset : '');
 
+                    var wv = opts.withViewer !== undefined ? (opts.withViewer ? '1' : '0') : '';
+                    $('#opt_with_viewer').val(wv).trigger('change');
+                    $('#opt_theme').val(opts.theme || '').trigger('change');
+                    $('#opt_dir').val(opts.dir || '').trigger('change');
+                    $('#opt_icon').val(opts.icon || '');
+                    $('#opt_font_family').val(opts.fontFamily || '');
+                    $('#opt_font_path').val(opts.fontPath || '');
+                    $('#opt_font_stack').val(opts.fontStack || '');
+
                     $('#opt_content_html').val(opts.contentHtml || '');
 
                     $('#css-vars-rows').empty();
@@ -1483,6 +1573,13 @@
                     $('#opt_orientation').val('portrait').trigger('change');
                     $('#opt_watermark_behind').val('').trigger('change');
                     $('#opt_smart_shrinking').val('').trigger('change');
+                    $('#opt_with_viewer').val('').trigger('change');
+                    $('#opt_theme').val('').trigger('change');
+                    $('#opt_dir').val('').trigger('change');
+                    $('#opt_icon').val('');
+                    $('#opt_font_family').val('');
+                    $('#opt_font_path').val('');
+                    $('#opt_font_stack').val('');
                     $('#css-vars-rows').empty();
                 }
             }

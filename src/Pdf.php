@@ -1156,6 +1156,11 @@ class Pdf
         $this->timeout = isset($config['timeout']) ? (int) $config['timeout'] : 120;
         $this->tempDirectory = $config['temp_path'] ?? NULL;
         $this->icon = $config['icon'] ?? NULL;
+
+        $defaultOptions = $config['options'] ?? $config['defaults'] ?? [];
+        if (is_array($defaultOptions) && $defaultOptions !== []) {
+            $this->applyResolvedOptions($defaultOptions);
+        }
     }
 
     private function readConfig(): array
