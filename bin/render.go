@@ -421,7 +421,7 @@ func buildPagedBandHTML(templateHTML string, totalPages int, heightInches float6
 	fmt.Fprintf(&sb, `<style>
 @page{margin:0;size:auto %.4fin}
 *,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;padding:0;overflow:hidden}
+html,body{margin:0;padding:0}
 .pdf-band-wrap{height:%.4fin;max-height:%.4fin;overflow:hidden;position:relative;box-sizing:border-box;margin:0;padding:0;break-after:page;page-break-after:always}
 .pdf-band-wrap:last-child{break-after:auto;page-break-after:auto}
 .pdf-band-body{height:100%%;max-height:100%%;overflow:hidden;box-sizing:border-box}
