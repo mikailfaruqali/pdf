@@ -187,13 +187,13 @@ class Pdf
         $this->templateOptions = $options;
         $this->templateData = $data;
 
+        $this->applyResolvedOptions($options, array_merge($this->builtInViewData(), $data));
+
         $mergedData = array_merge($this->builtInViewData(), $data);
 
         if (blank($options['contentHtml'] ?? NULL) && function_exists('view')) {
             $this->content(view($view, $mergedData));
         }
-
-        $this->applyResolvedOptions($options, $mergedData);
 
         return $this;
     }
@@ -1133,6 +1133,27 @@ class Pdf
             'pdfDir' => $this->dir ?? 'ltr',
             'pdfFontFamily' => $fontDetails['family'],
             'pdfFontStack' => $fontDetails['stack'],
+
+            'pdfPaper' => $this->paper,
+            'pdfPageWidth' => $this->pageWidth,
+            'pdfPageHeight' => $this->pageHeight,
+            'pdfOrientation' => $this->orientation,
+
+            'pdfMargin' => $this->margin,
+            'pdfMarginTop' => $this->marginTop,
+            'pdfMarginBottom' => $this->marginBottom,
+            'pdfMarginLeft' => $this->marginLeft,
+            'pdfMarginRight' => $this->marginRight,
+
+            'pdfHeaderHeight' => $this->headerHeight,
+            'pdfFooterHeight' => $this->footerHeight,
+            'pdfHeaderSpacing' => $this->headerSpacing,
+            'pdfFooterSpacing' => $this->footerSpacing,
+            'pdfHeaderOffset' => $this->headerOffset,
+            'pdfFooterOffset' => $this->footerOffset,
+
+            'pdfScale' => $this->scale,
+            'pdfTheme' => $this->theme,
         ];
     }
 
