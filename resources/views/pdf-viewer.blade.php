@@ -37,7 +37,7 @@
             --sn-btn-danger: #da3633;
             --sn-btn-danger-rgb: 218, 54, 51;
 
-            --sn-shadow-page: 0 0 0 1px #3a424c, 0 8px 28px rgba(1, 4, 9, 0.6);
+            --sn-shadow-page: 0 8px 28px rgba(1, 4, 9, 0.6);
             --sn-scroll-thumb: #3a424c;
             --sn-scroll-thumb-hover: #4d5561;
 
@@ -65,7 +65,7 @@
             --sn-btn-danger: #d1242f;
             --sn-btn-danger-rgb: 209, 36, 47;
 
-            --sn-shadow-page: 0 0 0 1px #e4dbcf, 0 8px 24px rgba(31, 35, 40, 0.12);
+            --sn-shadow-page: 0 8px 24px rgba(31, 35, 40, 0.12);
             --sn-scroll-thumb: #d5c8b5;
             --sn-scroll-thumb-hover: #c4b59f;
         }
@@ -90,7 +90,7 @@
                 --sn-btn-danger: #d1242f;
                 --sn-btn-danger-rgb: 209, 36, 47;
 
-                --sn-shadow-page: 0 0 0 1px #e4dbcf, 0 8px 24px rgba(31, 35, 40, 0.12);
+                --sn-shadow-page: 0 8px 24px rgba(31, 35, 40, 0.12);
                 --sn-scroll-thumb: #d5c8b5;
                 --sn-scroll-thumb-hover: #c4b59f;
             }

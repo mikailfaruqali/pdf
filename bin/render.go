@@ -388,7 +388,52 @@ var (
 	bodyRe    = regexp.MustCompile(`(?is)<body([^>]*)>(.*?)</body>`)
 	doctypeRe = regexp.MustCompile(`(?is)<!doctype[^>]*>`)
 	htmlTagRe = regexp.MustCompile(`(?is)</?html[^>]*>`)
+	styleRe   = regexp.MustCompile(`(?is)<style[^>]*>(.*?)</style>`)
+	// A bare html/body element selector, or one immediately followed by a
+	// class/id/attr/pseudo qualifier or combinator - but not part of a longer
+	// tag name (bodysomething) or a descendant reference further down a chain.
+	htmlBodyTagRe = regexp.MustCompile(`(?i)(^|[\s,(])(html|body)([\s,.:#\[>~+)]|$)`)
 )
+
+// rewriteHtmlBodySelectors rewrites bare `html`/`body` element selectors in
+// hoisted <style> blocks to target .pdf-band-body instead.
+//
+// The template was authored against its own single-page document, where
+// `body { ... }` means "the whole visible band". In the paginated document
+// that tag selector would instead match the one real <body> spanning every
+// stacked block, so a border, background or height rule on it fragments
+// across each forced page break and inflates the page count. .pdf-band-body
+// is the per-block stand-in that keeps the original, single-band meaning.
+func rewriteHtmlBodySelectors(headHTML string) string {
+	return styleRe.ReplaceAllStringFunc(headHTML, func(block string) string {
+		m := styleRe.FindStringSubmatch(block)
+		css := m[1]
+		open := strings.Index(block, css)
+
+		var out strings.Builder
+		depth := 0
+		selStart := 0
+		for i := 0; i < len(css); i++ {
+			switch css[i] {
+			case '{':
+				if depth == 0 {
+					out.WriteString(htmlBodyTagRe.ReplaceAllString(css[selStart:i], "${1}.pdf-band-body${3}"))
+					selStart = i
+				}
+				depth++
+			case '}':
+				depth--
+				if depth == 0 {
+					out.WriteString(css[selStart:i])
+					selStart = i
+				}
+			}
+		}
+		out.WriteString(css[selStart:])
+
+		return block[:open] + out.String() + block[open+len(css):]
+	})
+}
 
 // buildPagedBandHTML expands a header/footer template into one document that
 // paginates into exactly totalPages pages, each carrying that page's numbers.
@@ -400,7 +445,7 @@ var (
 func buildPagedBandHTML(templateHTML string, totalPages int, heightInches float64, pageOffset, totalOffset int) string {
 	head := ""
 	if m := headRe.FindStringSubmatch(templateHTML); m != nil {
-		head = m[1]
+		head = rewriteHtmlBodySelectors(m[1])
 	}
 
 	bodyAttrs, bodyInner := "", templateHTML
@@ -424,21 +469,28 @@ func buildPagedBandHTML(templateHTML string, totalPages int, heightInches float6
 html,body{margin:0;padding:0}
 .pdf-band-wrap{height:%.4fin;max-height:%.4fin;overflow:hidden;position:relative;box-sizing:border-box;margin:0;padding:0;break-after:page;page-break-after:always}
 .pdf-band-wrap:last-child{break-after:auto;page-break-after:auto}
+.pdf-band-body{height:100%%;max-height:100%%;overflow:hidden;box-sizing:border-box}
 </style></head><body`, heightInches, heightInches, heightInches)
 	if strings.TrimSpace(bodyAttrs) != "" {
 		sb.WriteString(" " + strings.TrimSpace(bodyAttrs))
 	}
 	sb.WriteString(">")
 
-	// The template's own body markup becomes a direct child of <body> inside
-	// each wrap, exactly as it is in the single-page render - selectors like
-	// body:has(> .fragment) or a height:100% chain rooted at <body> keep
-	// working the same way on every page instead of just the first.
+	// A rule the template hangs off `body` (a border, a background) must not
+	// span every stacked block - that fragments across each forced page break
+	// and inflates the page count. So body-level styling is re-applied per
+	// block on .pdf-band-body instead, same as the single-page render, while
+	// the real <body> keeps the template's attributes/classes too so a class
+	// selector like body.sn-print-fragment still matches.
 	for p := 1; p <= totalPages; p++ {
 		rendered := replacePagePlaceholders(bodyInner, p+pageOffset, totalPages+totalOffset)
-		sb.WriteString(`<div class="pdf-band-wrap">`)
+		sb.WriteString(`<div class="pdf-band-wrap"><div class="pdf-band-body"`)
+		if strings.TrimSpace(bodyAttrs) != "" {
+			sb.WriteString(" " + strings.TrimSpace(bodyAttrs))
+		}
+		sb.WriteString(">")
 		sb.WriteString(rendered)
-		sb.WriteString("</div>")
+		sb.WriteString("</div></div>")
 	}
 
 	sb.WriteString("</body></html>")
