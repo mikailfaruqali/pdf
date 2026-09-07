@@ -187,11 +187,13 @@ class Pdf
         $this->templateOptions = $options;
         $this->templateData = $data;
 
+        $mergedData = array_merge($this->builtInViewData(), $data);
+
         if (blank($options['contentHtml'] ?? NULL) && function_exists('view')) {
-            $this->content(view($view, $data));
+            $this->content(view($view, $mergedData));
         }
 
-        $this->applyResolvedOptions($options, $data);
+        $this->applyResolvedOptions($options, $mergedData);
 
         return $this;
     }
@@ -234,7 +236,7 @@ class Pdf
     public function headerView(string $view, array $data = []): self
     {
         if (function_exists('view')) {
-            $this->header(view($view, $data));
+            $this->header(view($view, array_merge($this->builtInViewData(), $data)));
         }
 
         return $this;
@@ -250,7 +252,7 @@ class Pdf
     public function footerView(string $view, array $data = []): self
     {
         if (function_exists('view')) {
-            $this->footer(view($view, $data));
+            $this->footer(view($view, array_merge($this->builtInViewData(), $data)));
         }
 
         return $this;
@@ -266,7 +268,7 @@ class Pdf
     public function watermarkView(string $view, array $data = []): self
     {
         if (function_exists('view')) {
-            $this->watermark(view($view, $data));
+            $this->watermark(view($view, array_merge($this->builtInViewData(), $data)));
         }
 
         return $this;
@@ -1120,6 +1122,17 @@ class Pdf
             'base64' => $fontBase64,
             'family' => $primaryFamily,
             'stack' => $fontStack,
+        ];
+    }
+
+    private function builtInViewData(): array
+    {
+        $fontDetails = $this->resolveViewerFontDetails();
+
+        return [
+            'pdfDir' => $this->dir ?? 'ltr',
+            'pdfFontFamily' => $fontDetails['family'],
+            'pdfFontStack' => $fontDetails['stack'],
         ];
     }
 
