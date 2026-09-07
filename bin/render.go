@@ -424,18 +424,21 @@ func buildPagedBandHTML(templateHTML string, totalPages int, heightInches float6
 html,body{margin:0;padding:0}
 .pdf-band-wrap{height:%.4fin;max-height:%.4fin;overflow:hidden;position:relative;box-sizing:border-box;margin:0;padding:0;break-after:page;page-break-after:always}
 .pdf-band-wrap:last-child{break-after:auto;page-break-after:auto}
-.pdf-band-body{height:100%%;max-height:100%%;overflow:hidden;box-sizing:border-box}
-</style></head><body>`, heightInches, heightInches, heightInches)
+</style></head><body`, heightInches, heightInches, heightInches)
+	if strings.TrimSpace(bodyAttrs) != "" {
+		sb.WriteString(" " + strings.TrimSpace(bodyAttrs))
+	}
+	sb.WriteString(">")
 
+	// The template's own body markup becomes a direct child of <body> inside
+	// each wrap, exactly as it is in the single-page render - selectors like
+	// body:has(> .fragment) or a height:100% chain rooted at <body> keep
+	// working the same way on every page instead of just the first.
 	for p := 1; p <= totalPages; p++ {
 		rendered := replacePagePlaceholders(bodyInner, p+pageOffset, totalPages+totalOffset)
-		sb.WriteString(`<div class="pdf-band-wrap"><div class="pdf-band-body"`)
-		if strings.TrimSpace(bodyAttrs) != "" {
-			sb.WriteString(" " + strings.TrimSpace(bodyAttrs))
-		}
-		sb.WriteString(">")
+		sb.WriteString(`<div class="pdf-band-wrap">`)
 		sb.WriteString(rendered)
-		sb.WriteString("</div></div>")
+		sb.WriteString("</div>")
 	}
 
 	sb.WriteString("</body></html>")
