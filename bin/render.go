@@ -203,7 +203,7 @@ func (j *job) build(contentHTML, headerHTML, footerHTML, watermarkHTML string) (
 			defer bandsWg.Done()
 			if err := j.step("render watermark", func() error {
 				var e error
-				wmBytes, e = j.renderer.RenderHTMLToPDFBytes(watermarkHTML, RenderOptions{
+				wmBytes, e = j.renderer.RenderHTMLToPDFBytes(buildWatermarkHTML(watermarkHTML, j.cfg.watermarkOpacity), RenderOptions{
 					PaperWidthInches:  g.paperWidth,
 					PaperHeightInches: g.paperHeight,
 					Landscape:         g.landscape,
@@ -572,3 +572,29 @@ func (j *job) renderBand(templateHTML string, totalPages int, spec bandSpec) (*b
 
 	return &band{spec: spec, data: data, multi: multi, pages: pages}, nil
 }
+
+// buildWatermarkHTML injects the requested watermark opacity and transparent background
+// into the HTML document so that Chrome renders the graphics and text streams with the
+// exact alpha / ExtGState opacity values, preventing Chrome's internal defaults from resetting
+// opacity to 1.0.
+func buildWatermarkHTML(html string, opacity float64) string {
+	opacity = math.Min(math.Max(opacity, 0), 1)
+	style := fmt.Sprintf(`<style>html, body { background: transparent !important; opacity: %.4f !important; }</style>`, opacity)
+
+	headRegex := regexp.MustCompile(`(?i)<head[^>]*>`)
+	if headRegex.MatchString(html) {
+		return headRegex.ReplaceAllStringFunc(html, func(m string) string {
+			return m + style
+		})
+	}
+
+	htmlRegex := regexp.MustCompile(`(?i)<html[^>]*>`)
+	if htmlRegex.MatchString(html) {
+		return htmlRegex.ReplaceAllStringFunc(html, func(m string) string {
+			return m + "<head>" + style + "</head>"
+		})
+	}
+
+	return "<!DOCTYPE html><html><head><meta charset=\"utf-8\">" + style + "</head><body>" + html + "</body></html>"
+}
+
