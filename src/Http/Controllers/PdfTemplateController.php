@@ -53,6 +53,16 @@ class PdfTemplateController extends Controller
             'options' => ['nullable', 'array'],
         ]);
 
+        $options = $request->input('options', []);
+        $optionErrors = $this->validateTemplateOptions($options);
+        if ($optionErrors !== []) {
+            return response()->json([
+                'success' => FALSE,
+                'message' => $optionErrors[0],
+                'errors' => $optionErrors,
+            ], 422);
+        }
+
         $exists = DB::table('pdf_templates')
             ->where('view', $validated['view'])
             ->where('locale', $validated['locale'])
@@ -65,7 +75,7 @@ class PdfTemplateController extends Controller
             ], 422);
         }
 
-        $options = $this->sanitizeOptions($request->input('options', []));
+        $options = $this->sanitizeOptions($options);
         $now = date('Y-m-d H:i:s');
 
         $id = DB::table('pdf_templates')->insertGetId([
@@ -128,6 +138,16 @@ class PdfTemplateController extends Controller
             'options' => ['nullable', 'array'],
         ]);
 
+        $options = $request->input('options', []);
+        $optionErrors = $this->validateTemplateOptions($options);
+        if ($optionErrors !== []) {
+            return response()->json([
+                'success' => FALSE,
+                'message' => $optionErrors[0],
+                'errors' => $optionErrors,
+            ], 422);
+        }
+
         $exists = DB::table('pdf_templates')
             ->where('view', $validated['view'])
             ->where('locale', $validated['locale'])
@@ -141,7 +161,7 @@ class PdfTemplateController extends Controller
             ], 422);
         }
 
-        $options = $this->sanitizeOptions($request->input('options', []));
+        $options = $this->sanitizeOptions($options);
 
         DB::table('pdf_templates')->where('id', $id)->update([
             'view' => $validated['view'],
@@ -179,6 +199,12 @@ class PdfTemplateController extends Controller
         $viewName = $request->input('view', '');
         $rawOptions = $request->input('options', []);
         $options = is_string($rawOptions) ? (json_decode($rawOptions, TRUE) ?: []) : (array) $rawOptions;
+
+        $optionErrors = $this->validateTemplateOptions($options);
+        if ($optionErrors !== []) {
+            return response("<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; padding: 24px; color: #d1242f; background: #fff5f5; border: 1px solid #ffcccc; border-radius: 6px; margin: 24px;'><h3>Validation Error</h3><p>" . htmlspecialchars($optionErrors[0]) . "</p></div>", 422);
+        }
+
         $options = $this->sanitizeOptions($options);
 
         $pdf = Pdf::make();
@@ -195,9 +221,111 @@ class PdfTemplateController extends Controller
             }
         }
 
-        $pdf->applyTemplateOptions($options);
+        try {
+            $pdf->applyTemplateOptions($options);
 
-        return $pdf->inline('template-preview.pdf');
+            return $pdf->inline('template-preview.pdf');
+        } catch (Throwable $throwable) {
+            return response("<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; padding: 24px; color: #d1242f; background: #fff5f5; border: 1px solid #ffcccc; border-radius: 6px; margin: 24px;'><h3>PDF Engine Error</h3><p><strong>Message:</strong> " . htmlspecialchars($throwable->getMessage()) . "</p></div>", 422);
+        }
+    }
+
+    /**
+     * Validate options against engine constraints to prevent engine errors.
+     *
+     * @return array<int, string> List of error messages (empty if valid)
+     */
+    protected function validateTemplateOptions(mixed $options): array
+    {
+        if (! is_array($options)) {
+            return [];
+        }
+
+        $errors = [];
+
+        $hasWidth = isset($options['pageWidth']) && trim((string) $options['pageWidth']) !== '';
+        $hasHeight = isset($options['pageHeight']) && trim((string) $options['pageHeight']) !== '';
+
+        if ($hasWidth xor $hasHeight) {
+            $errors[] = 'Both custom page width and custom page height must be provided together.';
+        }
+
+        $dimRegex = '/^\s*[0-9]+(\.[0-9]+)?\s*(mm|cm|in|pt|px|pc)?\s*$/i';
+
+        $dimFields = [
+            'pageWidth' => 'Custom page width',
+            'pageHeight' => 'Custom page height',
+            'marginTop' => 'Top margin',
+            'marginBottom' => 'Bottom margin',
+            'marginLeft' => 'Left margin',
+            'marginRight' => 'Right margin',
+            'headerHeight' => 'Header height',
+            'headerSpacing' => 'Header spacing',
+            'headerOffset' => 'Header offset',
+            'footerHeight' => 'Footer height',
+            'footerSpacing' => 'Footer spacing',
+            'footerOffset' => 'Footer offset',
+        ];
+
+        foreach ($dimFields as $field => $label) {
+            if (isset($options[$field]) && trim((string) $options[$field]) !== '') {
+                $val = trim((string) $options[$field]);
+                if (! preg_match($dimRegex, $val)) {
+                    $errors[] = "{$label} '{$val}' is invalid. Please use a positive number with optional unit (e.g. 10mm, 0.5in, 20px, 15pt).";
+                } elseif ($this->parseDimensionToInches($val) < 0) {
+                    $errors[] = "{$label} must not be negative.";
+                }
+            }
+        }
+
+        if ($hasWidth && $hasHeight && preg_match($dimRegex, (string) $options['pageWidth']) && preg_match($dimRegex, (string) $options['pageHeight'])) {
+            if ($this->parseDimensionToInches((string) $options['pageWidth']) <= 0 || $this->parseDimensionToInches((string) $options['pageHeight']) <= 0) {
+                $errors[] = 'Custom page width and height must both be greater than zero.';
+            }
+        }
+
+        if (isset($options['scale']) && trim((string) $options['scale']) !== '') {
+            $scale = (float) $options['scale'];
+            if ($scale < 0.1 || $scale > 2.0) {
+                $errors[] = "Scale must be between 0.1 and 2.0 (got {$scale}).";
+            }
+        }
+
+        if (isset($options['watermarkOpacity']) && trim((string) $options['watermarkOpacity']) !== '') {
+            $op = (float) $options['watermarkOpacity'];
+            if ($op < 0.0 || $op > 1.0) {
+                $errors[] = "Watermark opacity must be between 0.0 and 1.0 (got {$op}).";
+            }
+        }
+
+        return $errors;
+    }
+
+    protected function parseDimensionToInches(string $dim): float
+    {
+        $dim = strtolower(trim($dim));
+        if ($dim === '') {
+            return 0.0;
+        }
+
+        $units = [
+            'mm' => 25.4,
+            'cm' => 2.54,
+            'in' => 1.0,
+            'pt' => 72.0,
+            'px' => 96.0,
+            'pc' => 6.0,
+        ];
+
+        foreach ($units as $suffix => $divisor) {
+            if (str_ends_with($dim, $suffix)) {
+                $num = (float) trim(substr($dim, 0, -strlen($suffix)));
+
+                return $num / $divisor;
+            }
+        }
+
+        return ((float) $dim) / 25.4;
     }
 
     protected function resolveSupportedLocales(): array

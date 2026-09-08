@@ -803,6 +803,13 @@
             background: var(--sn-form-hover-border);
         }
 
+        /* ── Input Validation Highlight ── */
+        .form-control.is-invalid,
+        .sn-select2.is-invalid + .select2-container .select2-selection {
+            border-color: var(--sn-ic-danger) !important;
+            box-shadow: 0 0 0 2px rgba(255, 123, 114, 0.3) !important;
+        }
+
         /* ── Modal Close Button (Clean SVG × without focus outline box) ── */
         .btn-close {
             box-shadow: none !important;
@@ -1779,6 +1786,270 @@
 
                     syncDisableStates();
                 }
+
+                $('.is-invalid').removeClass('is-invalid');
+            }
+
+            // Real-time invalid clearing
+            $(document).on('input change', '.form-control, select', function() {
+                $(this).removeClass('is-invalid');
+                if ($(this).hasClass('sn-select2')) {
+                    $(this).next('.select2-container').find('.select2-selection').removeClass('is-invalid');
+                }
+            });
+
+            // Dimension validation and unit conversion helpers
+            function parseDimToInches(dimStr) {
+                if (!dimStr || String(dimStr).trim() === '') return 0;
+                var s = String(dimStr).trim().toLowerCase();
+                var units = {
+                    'mm': 25.4,
+                    'cm': 2.54,
+                    'in': 1.0,
+                    'pt': 72.0,
+                    'px': 96.0,
+                    'pc': 6.0
+                };
+                for (var u in units) {
+                    if (s.endsWith(u)) {
+                        var val = parseFloat(s.slice(0, -u.length).trim());
+                        return isNaN(val) ? null : val / units[u];
+                    }
+                }
+                var val = parseFloat(s);
+                return isNaN(val) ? null : val / 25.4;
+            }
+
+            function isValidDim(dimStr) {
+                if (!dimStr || String(dimStr).trim() === '') return true;
+                var s = String(dimStr).trim();
+                if (!/^[0-9]+(\.[0-9]+)?\s*(mm|cm|in|pt|px|pc)?$/i.test(s)) {
+                    return false;
+                }
+                var inches = parseDimToInches(s);
+                return inches !== null && inches >= 0;
+            }
+
+            var STANDARD_PAPER_INCHES = {
+                'A0': { w: 33.11, h: 46.81 },
+                'A1': { w: 23.39, h: 33.11 },
+                'A2': { w: 16.54, h: 23.39 },
+                'A3': { w: 11.69, h: 16.54 },
+                'A4': { w: 8.27, h: 11.69 },
+                'A5': { w: 5.83, h: 8.27 },
+                'A6': { w: 4.13, h: 5.83 },
+                'B4': { w: 9.84, h: 13.90 },
+                'B5': { w: 6.93, h: 9.84 },
+                'LETTER': { w: 8.5, h: 11.0 },
+                'LEGAL': { w: 8.5, h: 14.0 },
+                'TABLOID': { w: 11.0, h: 17.0 },
+                'LEDGER': { w: 17.0, h: 11.0 },
+                'EXECUTIVE': { w: 7.25, h: 10.5 },
+                'STATEMENT': { w: 5.5, h: 8.5 }
+            };
+
+            function validateModalForm() {
+                $('.is-invalid').removeClass('is-invalid');
+                var errors = [];
+                var $firstInvalid = null;
+
+                function markInvalid($el, msg) {
+                    $el.addClass('is-invalid');
+                    if (!$firstInvalid) $firstInvalid = $el;
+                    errors.push(msg);
+                }
+
+                // 1. Target View & Locale
+                var view = $('#select_view').val();
+                if (!view || String(view).trim() === '') {
+                    markInvalid($('#select_view'), 'Please choose or type a Blade view name.');
+                }
+
+                var locale = $('#select_locale').val();
+                if (!locale || String(locale).trim() === '') {
+                    markInvalid($('#select_locale'), 'Please select a Locale.');
+                }
+
+                // 2. Custom Dimensions
+                var pw = $('#opt_page_width').val();
+                var ph = $('#opt_page_height').val();
+
+                if ((pw && !ph) || (!pw && ph)) {
+                    if (!pw) markInvalid($('#opt_page_width'), 'Custom page width is required when custom height is provided.');
+                    if (!ph) markInvalid($('#opt_page_height'), 'Custom page height is required when custom width is provided.');
+                } else if (pw && ph) {
+                    if (!isValidDim(pw)) {
+                        markInvalid($('#opt_page_width'), 'Custom width is invalid. Use a positive number with unit (e.g. 210mm, 8.5in, 500px).');
+                    } else if (parseDimToInches(pw) <= 0) {
+                        markInvalid($('#opt_page_width'), 'Custom width must be greater than zero.');
+                    }
+
+                    if (!isValidDim(ph)) {
+                        markInvalid($('#opt_page_height'), 'Custom height is invalid. Use a positive number with unit (e.g. 297mm, 11in, 800px).');
+                    } else if (parseDimToInches(ph) <= 0) {
+                        markInvalid($('#opt_page_height'), 'Custom height must be greater than zero.');
+                    }
+                }
+
+                // 3. Scale
+                var scaleVal = $('#opt_scale').val();
+                if (scaleVal !== '' && scaleVal !== null && scaleVal !== undefined) {
+                    var sNum = parseFloat(scaleVal);
+                    if (isNaN(sNum) || sNum < 0.1 || sNum > 2.0) {
+                        markInvalid($('#opt_scale'), 'Scale must be a number between 0.1 and 2.0.');
+                    }
+                }
+
+                // 4. Margins
+                if (!$('#opt_disable_margins').is(':checked')) {
+                    var marginFields = [
+                        { id: '#opt_margin_top', label: 'Top margin' },
+                        { id: '#opt_margin_bottom', label: 'Bottom margin' },
+                        { id: '#opt_margin_left', label: 'Left margin' },
+                        { id: '#opt_margin_right', label: 'Right margin' }
+                    ];
+
+                    marginFields.forEach(function(item) {
+                        var val = $(item.id).val();
+                        if (val && !isValidDim(val)) {
+                            markInvalid($(item.id), item.label + ' format is invalid. Use e.g. 5mm, 0.5in, 10px.');
+                        }
+                    });
+                }
+
+                // 5. Header Dimensions
+                if (!$('#opt_disable_header').is(':checked')) {
+                    var headerFields = [
+                        { id: '#opt_header_height', label: 'Header height' },
+                        { id: '#opt_header_spacing', label: 'Header spacing' },
+                        { id: '#opt_header_offset', label: 'Header offset' }
+                    ];
+                    headerFields.forEach(function(item) {
+                        var val = $(item.id).val();
+                        if (val && !isValidDim(val)) {
+                            markInvalid($(item.id), item.label + ' format is invalid. Use e.g. 20mm, 1in, 10px.');
+                        }
+                    });
+                }
+
+                // 6. Footer Dimensions
+                if (!$('#opt_disable_footer').is(':checked')) {
+                    var footerFields = [
+                        { id: '#opt_footer_height', label: 'Footer height' },
+                        { id: '#opt_footer_spacing', label: 'Footer spacing' },
+                        { id: '#opt_footer_offset', label: 'Footer offset' }
+                    ];
+                    footerFields.forEach(function(item) {
+                        var val = $(item.id).val();
+                        if (val && !isValidDim(val)) {
+                            markInvalid($(item.id), item.label + ' format is invalid. Use e.g. 15mm, 1in, 10px.');
+                        }
+                    });
+                }
+
+                // 7. Watermark Opacity
+                if (!$('#opt_disable_watermark').is(':checked')) {
+                    var wmOp = $('#opt_watermark_opacity').val();
+                    if (wmOp !== '' && wmOp !== null && wmOp !== undefined) {
+                        var opNum = parseFloat(wmOp);
+                        if (isNaN(opNum) || opNum < 0.0 || opNum > 1.0) {
+                            markInvalid($('#opt_watermark_opacity'), 'Watermark opacity must be between 0.0 and 1.0.');
+                        }
+                    }
+                }
+
+                // 8. Offsets
+                var pOff = $('#opt_page_offset').val();
+                if (pOff !== '' && isNaN(parseInt(pOff, 10))) {
+                    markInvalid($('#opt_page_offset'), 'Page offset must be an integer.');
+                }
+                var tOff = $('#opt_total_offset').val();
+                if (tOff !== '' && isNaN(parseInt(tOff, 10))) {
+                    markInvalid($('#opt_total_offset'), 'Total pages offset must be an integer.');
+                }
+
+                // 9. Layout Sanity Check (Margins + Bands vs Paper Dimensions)
+                if (errors.length === 0) {
+                    var paperName = String($('#opt_paper').val() || 'A4').toUpperCase();
+                    var isLandscape = $('#opt_orientation').val() === 'landscape';
+                    var pW = 8.27, pH = 11.69;
+
+                    if (pw && ph) {
+                        pW = parseDimToInches(pw);
+                        pH = parseDimToInches(ph);
+                    } else if (STANDARD_PAPER_INCHES[paperName]) {
+                        pW = STANDARD_PAPER_INCHES[paperName].w;
+                        pH = STANDARD_PAPER_INCHES[paperName].h;
+                    }
+                    if (isLandscape) {
+                        var tmp = pW; pW = pH; pH = tmp;
+                    }
+
+                    var mTop = $('#opt_disable_margins').is(':checked') ? 0 : parseDimToInches($('#opt_margin_top').val());
+                    var mBottom = $('#opt_disable_margins').is(':checked') ? 0 : parseDimToInches($('#opt_margin_bottom').val());
+                    var mLeft = $('#opt_disable_margins').is(':checked') ? 0 : parseDimToInches($('#opt_margin_left').val());
+                    var mRight = $('#opt_disable_margins').is(':checked') ? 0 : parseDimToInches($('#opt_margin_right').val());
+
+                    var hHeight = $('#opt_disable_header').is(':checked') ? 0 : parseDimToInches($('#opt_header_height').val());
+                    var hSpace = $('#opt_disable_header').is(':checked') ? 0 : parseDimToInches($('#opt_header_spacing').val());
+                    var hOff = $('#opt_disable_header').is(':checked') ? 0 : parseDimToInches($('#opt_header_offset').val());
+
+                    var fHeight = $('#opt_disable_footer').is(':checked') ? 0 : parseDimToInches($('#opt_footer_height').val());
+                    var fSpace = $('#opt_disable_footer').is(':checked') ? 0 : parseDimToInches($('#opt_footer_spacing').val());
+                    var fOff = $('#opt_disable_footer').is(':checked') ? 0 : parseDimToInches($('#opt_footer_offset').val());
+
+                    var topUsed = Math.max(mTop, hOff + hHeight + hSpace);
+                    var bottomUsed = Math.max(mBottom, fOff + fHeight + fSpace);
+                    var usableHeight = pH - topUsed - bottomUsed;
+                    var usableWidth = pW - mLeft - mRight;
+
+                    if (usableHeight <= 0.2) {
+                        markInvalid($('#opt_margin_top'), 'Combined margins, header, and footer height leave no room for content on this page.');
+                    }
+                    if (usableWidth <= 0.2) {
+                        markInvalid($('#opt_margin_left'), 'Combined left and right margins leave no room for content on this page.');
+                    }
+                }
+
+                // 10. CSS Variables Validation
+                $('#css-vars-rows .css-var-row').each(function() {
+                    var $nameInput = $(this).find('.css-var-name');
+                    var $valInput = $(this).find('.css-var-value');
+                    var name = String($nameInput.val() || '').trim();
+                    var val = String($valInput.val() || '').trim();
+
+                    if (val !== '' && name === '') {
+                        markInvalid($nameInput, 'Variable name cannot be empty when a value is provided.');
+                    } else if (name !== '') {
+                        var cleanName = name.replace(/^-+/, '');
+                        if (!/^[a-zA-Z0-9_\-]+$/.test(cleanName)) {
+                            markInvalid($nameInput, 'Variable name "' + name + '" is invalid. Use letters, numbers, and dashes.');
+                        }
+                    }
+                });
+
+                if (errors.length > 0) {
+                    if ($firstInvalid) {
+                        $firstInvalid.focus();
+                        if ($firstInvalid.hasClass('sn-select2')) {
+                            $firstInvalid.select2('open');
+                        }
+                    }
+
+                    var htmlList = '<ul style="text-align: left; margin: 0; padding-inline-start: 20px;">' +
+                        errors.map(function(e) { return '<li>' + e + '</li>'; }).join('') +
+                        '</ul>';
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validation Error',
+                        html: htmlList,
+                        customClass: { popup: 'sn-dialog' }
+                    });
+                    return false;
+                }
+
+                return true;
             }
 
             // Open Create Modal instantly
@@ -1806,34 +2077,15 @@
 
             // Save Template
             $('#btn-modal-save').on('click', function() {
+                if (!validateModalForm()) {
+                    return;
+                }
+
                 var id = $('#template_id').val();
                 var view = $('#select_view').val();
                 var locale = $('#select_locale').val();
-
-                if (!view) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'View Required',
-                        text: 'Please choose or type a Blade view name.',
-                        customClass: { popup: 'sn-dialog' }
-                    });
-                    return;
-                }
-
-                var pageWidth = $('#opt_page_width').val();
-                var pageHeight = $('#opt_page_height').val();
-
-                if ((pageWidth && !pageHeight) || (!pageWidth && pageHeight)) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Custom Dimensions',
-                        text: 'Both width and height must be provided together.',
-                        customClass: { popup: 'sn-dialog' }
-                    });
-                    return;
-                }
-
                 var options = collectOptions();
+
                 var payload = {
                     view: view,
                     locale: locale,
@@ -1913,16 +2165,7 @@
             });
 
             $('#btn-modal-preview').on('click', function() {
-                var pageWidth = $('#opt_page_width').val();
-                var pageHeight = $('#opt_page_height').val();
-
-                if ((pageWidth && !pageHeight) || (!pageWidth && pageHeight)) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Custom Dimensions',
-                        text: 'Both width and height must be provided together.',
-                        customClass: { popup: 'sn-dialog' }
-                    });
+                if (!validateModalForm()) {
                     return;
                 }
 
