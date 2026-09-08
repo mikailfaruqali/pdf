@@ -73,6 +73,10 @@ class Pdf
         'preferCssPageSize' => 'preferCssPageSize',
         'withViewer' => 'withViewer',
         'quiet' => 'quiet',
+        'disableHeader' => 'disableHeader',
+        'disableFooter' => 'disableFooter',
+        'disableWatermark' => 'disableWatermark',
+        'disableMargins' => 'disableMargins',
     ];
 
     private string $contentHtml = '';
@@ -147,7 +151,7 @@ class Pdf
 
     private ?string $tempDirectory;
 
-    private bool $withViewer = FALSE;
+    private bool $withViewer = TRUE;
 
     private ?string $fontPath = NULL;
 
@@ -242,6 +246,25 @@ class Pdf
         return $this;
     }
 
+    public function withoutHeader(): self
+    {
+        $this->headerHtml = NULL;
+        $this->headerHeight = NULL;
+        $this->headerSpacing = NULL;
+        $this->headerOffset = NULL;
+
+        return $this;
+    }
+
+    public function disableHeader(bool $disable = TRUE): self
+    {
+        if ($disable) {
+            $this->withoutHeader();
+        }
+
+        return $this;
+    }
+
     public function footer(string|Renderable $html): self
     {
         $this->footerHtml = $this->renderHtml($html);
@@ -258,6 +281,25 @@ class Pdf
         return $this;
     }
 
+    public function withoutFooter(): self
+    {
+        $this->footerHtml = NULL;
+        $this->footerHeight = NULL;
+        $this->footerSpacing = NULL;
+        $this->footerOffset = NULL;
+
+        return $this;
+    }
+
+    public function disableFooter(bool $disable = TRUE): self
+    {
+        if ($disable) {
+            $this->withoutFooter();
+        }
+
+        return $this;
+    }
+
     public function watermark(string|Renderable $html): self
     {
         $this->watermarkHtml = $this->renderHtml($html);
@@ -269,6 +311,22 @@ class Pdf
     {
         if (function_exists('view')) {
             $this->watermark(view($view, array_merge($this->builtInViewData(), $data)));
+        }
+
+        return $this;
+    }
+
+    public function withoutWatermark(): self
+    {
+        $this->watermarkHtml = NULL;
+
+        return $this;
+    }
+
+    public function disableWatermark(bool $disable = TRUE): self
+    {
+        if ($disable) {
+            $this->withoutWatermark();
         }
 
         return $this;
@@ -381,6 +439,31 @@ class Pdf
     public function marginRight(string $margin): self
     {
         $this->marginRight = $margin;
+
+        return $this;
+    }
+
+    public function withoutMargins(): self
+    {
+        $this->margin = '0';
+        $this->marginTop = '0';
+        $this->marginBottom = '0';
+        $this->marginLeft = '0';
+        $this->marginRight = '0';
+
+        return $this;
+    }
+
+    public function noMargins(): self
+    {
+        return $this->withoutMargins();
+    }
+
+    public function disableMargins(bool $disable = TRUE): self
+    {
+        if ($disable) {
+            $this->withoutMargins();
+        }
 
         return $this;
     }
@@ -568,6 +651,11 @@ class Pdf
         $this->withViewer = $withViewer;
 
         return $this;
+    }
+
+    public function withoutViewer(): self
+    {
+        return $this->withViewer(FALSE);
     }
 
     public function font(?string $path = NULL, ?string $family = NULL, ?string $stack = NULL): self

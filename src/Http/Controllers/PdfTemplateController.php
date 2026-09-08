@@ -328,6 +328,7 @@ class PdfTemplateController extends Controller
 
         $boolFields = [
             'watermarkBehind', 'smartShrinking', 'preferCssPageSize', 'withViewer', 'quiet',
+            'disableHeader', 'disableFooter', 'disableWatermark', 'disableMargins',
         ];
 
         foreach ($boolFields as $boolField) {

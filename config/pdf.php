@@ -104,21 +104,25 @@ return [
     |      - 'marginBottom'      => null
     |      - 'marginLeft'        => null
     |      - 'marginRight'       => null
+    |      - 'disableMargins'    => false (bool, full bleed zero margins)
     |
     |   3. Header & Footer (HTML fragments, support {page}, {pages}, {page+1}):
     |      - 'headerHtml'        => null (raw HTML string or Blade markup)
     |      - 'headerHeight'      => null (e.g. '20mm')
     |      - 'headerSpacing'     => null (e.g. '4mm')
     |      - 'headerOffset'      => null (e.g. '0mm')
+    |      - 'disableHeader'     => false (bool, suppress/disable header)
     |      - 'footerHtml'        => null (raw HTML string or Blade markup)
     |      - 'footerHeight'      => null (e.g. '15mm')
     |      - 'footerSpacing'     => null (e.g. '4mm')
     |      - 'footerOffset'      => null (e.g. '0mm')
+    |      - 'disableFooter'     => false (bool, suppress/disable footer)
     |
     |   4. Watermark & Content Override:
     |      - 'watermarkHtml'     => null (raw HTML or text)
     |      - 'watermarkOpacity'  => 0.3 (float, 0.0 to 1.0)
     |      - 'watermarkBehind'   => true (bool, draw under content vs over)
+    |      - 'disableWatermark'  => false (bool, suppress/disable watermark)
     |      - 'contentHtml'       => null (raw HTML to override entire view)
     |
     |   5. Document Metadata & Page Offsets:
@@ -131,7 +135,7 @@ return [
     |      - 'totalOffset'       => 0 (int, offset added to total page count)
     |
     |   6. Viewer UI & Fonts:
-    |      - 'withViewer'        => false (bool, use built-in PDF viewer on inline preview)
+    |      - 'withViewer'        => true (bool, use built-in custom PDF viewer on inline preview by default)
     |      - 'theme'             => 'dark' ('dark' | 'light' | 'auto')
     |      - 'dir'               => 'ltr' ('ltr' | 'rtl' | 'auto')
     |      - 'icon'              => null (emoji '📄', URL, data: URI, or image file path)
@@ -161,18 +165,22 @@ return [
         // 'marginBottom' => null,
         // 'marginLeft' => null,
         // 'marginRight' => null,
+        // 'disableMargins' => false,
 
         // Header & Footer
+        // 'disableHeader' => false,
         // 'headerHtml' => null,
         // 'headerHeight' => null,
         // 'headerSpacing' => null,
         // 'headerOffset' => null,
+        // 'disableFooter' => false,
         // 'footerHtml' => null,
         // 'footerHeight' => null,
         // 'footerSpacing' => null,
         // 'footerOffset' => null,
 
         // Watermark & Content Override
+        // 'disableWatermark' => false,
         // 'watermarkHtml' => null,
         // 'watermarkOpacity' => 0.3,
         // 'watermarkBehind' => true,
@@ -188,7 +196,7 @@ return [
         // 'totalOffset' => 0,
 
         // Viewer UI & Fonts
-        // 'withViewer' => false,
+        'withViewer' => env('PDF_WITH_VIEWER', TRUE),
         // 'theme' => 'dark',
         // 'dir' => 'ltr',
         // 'icon' => null,

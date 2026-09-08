@@ -516,6 +516,75 @@
             box-shadow: 0 0 0 2px rgba(var(--sn-accent-rgb), 0.25);
         }
 
+        /* ── Input-style Toggle Field matching form-control & select2 ── */
+        .sn-form-toggle {
+            height: var(--sn-form-height);
+            background-color: var(--sn-form-input-bg);
+            border: 1px solid var(--sn-form-border);
+            border-radius: var(--sn-radius);
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+            width: 100%;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .sn-form-toggle:hover {
+            border-color: var(--sn-form-hover-border);
+        }
+
+        .sn-form-toggle:focus-within {
+            border-color: var(--sn-accent);
+            box-shadow: 0 0 0 2px rgba(var(--sn-accent-rgb), 0.25);
+        }
+
+        .sn-form-toggle__label {
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--sn-text);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            pointer-events: none;
+        }
+
+        .sn-form-toggle__label i {
+            font-size: 14px;
+        }
+
+        .sn-form-toggle .sn-switch {
+            margin: 0;
+            width: 38px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+            background-color: var(--sn-surface);
+            border: 1px solid var(--sn-form-border);
+            transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .sn-form-toggle .sn-switch:focus {
+            box-shadow: none;
+            border-color: var(--sn-accent);
+        }
+
+        .sn-form-toggle .sn-switch:checked {
+            background-color: var(--sn-btn-primary);
+            border-color: var(--sn-btn-primary);
+        }
+
+        .sn-disabled-block {
+            opacity: 0.35;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            user-select: none;
+        }
+
         textarea.form-control {
             height: auto;
             min-height: 95px;
@@ -909,13 +978,25 @@
                                         <span class="sn-tag"><i class="fa-regular fa-file"></i> {{ $t->options['paper'] ?? 'A4' }}</span>
                                     @endif
                                     <span class="sn-tag"><i class="fa-solid fa-arrows-up-down-left-right"></i> {{ $t->options['orientation'] ?? 'portrait' }}</span>
-                                    @if(!empty($t->options['headerHtml']))
+                                    @if(!empty($t->options['disableMargins']))
+                                        <span class="sn-tag ic-primary"><i class="fa-solid fa-crop-simple"></i> Full Bleed</span>
+                                    @endif
+                                    @if(!empty($t->options['preferCssPageSize']))
+                                        <span class="sn-tag ic-purple"><i class="fa-solid fa-file-code"></i> @page CSS</span>
+                                    @endif
+                                    @if(!empty($t->options['disableHeader']))
+                                        <span class="sn-tag ic-danger"><i class="fa-solid fa-ban"></i> No Header</span>
+                                    @elseif(!empty($t->options['headerHtml']))
                                         <span class="sn-tag ic-primary"><i class="fa-solid fa-heading"></i> Header</span>
                                     @endif
-                                    @if(!empty($t->options['footerHtml']))
+                                    @if(!empty($t->options['disableFooter']))
+                                        <span class="sn-tag ic-danger"><i class="fa-solid fa-ban"></i> No Footer</span>
+                                    @elseif(!empty($t->options['footerHtml']))
                                         <span class="sn-tag ic-primary"><i class="fa-solid fa-shoe-prints"></i> Footer</span>
                                     @endif
-                                    @if(!empty($t->options['watermarkHtml']))
+                                    @if(!empty($t->options['disableWatermark']))
+                                        <span class="sn-tag ic-danger"><i class="fa-solid fa-ban"></i> No Watermark</span>
+                                    @elseif(!empty($t->options['watermarkHtml']))
                                         <span class="sn-tag ic-warning"><i class="fa-solid fa-stamp"></i> Watermark</span>
                                     @endif
                                     @if(!empty($t->options['contentHtml']))
@@ -1048,24 +1129,46 @@
                                             <option value="0">Disabled</option>
                                         </select>
                                     </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="opt_prefer_css_page_size">CSS Page Size (@page)</label>
+                                        <select id="opt_prefer_css_page_size" class="form-select sn-select2">
+                                            <option value="">Default (Use Paper Size)</option>
+                                            <option value="1">Honor @page CSS Rule</option>
+                                            <option value="0">Force Paper Size Option</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div class="row g-3">
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_margin_top">Top Margin</label>
-                                        <input type="text" id="opt_margin_top" class="form-control" placeholder="5mm">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="opt_disable_margins">Margins Mode</label>
+                                        <label class="sn-form-toggle" for="opt_disable_margins">
+                                            <span class="sn-form-toggle__label">
+                                                <i class="fa-solid fa-crop-simple ic-primary"></i>
+                                                <span>Zero Margins (Full Bleed)</span>
+                                            </span>
+                                            <input class="form-check-input sn-switch" type="checkbox" role="switch" id="opt_disable_margins">
+                                        </label>
                                     </div>
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_margin_bottom">Bottom Margin</label>
-                                        <input type="text" id="opt_margin_bottom" class="form-control" placeholder="5mm">
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_margin_left">Left Margin</label>
-                                        <input type="text" id="opt_margin_left" class="form-control" placeholder="5mm">
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_margin_right">Right Margin</label>
-                                        <input type="text" id="opt_margin_right" class="form-control" placeholder="5mm">
+                                </div>
+                                <div id="margins-fields-wrapper">
+                                    <div class="row g-3">
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_margin_top">Top Margin</label>
+                                            <input type="text" id="opt_margin_top" class="form-control" placeholder="5mm">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_margin_bottom">Bottom Margin</label>
+                                            <input type="text" id="opt_margin_bottom" class="form-control" placeholder="5mm">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_margin_left">Left Margin</label>
+                                            <input type="text" id="opt_margin_left" class="form-control" placeholder="5mm">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_margin_right">Right Margin</label>
+                                            <input type="text" id="opt_margin_right" class="form-control" placeholder="5mm">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1076,45 +1179,73 @@
                                     <i class="fa-solid fa-heading ic-primary"></i> Dynamic Header & Footer (HTML)
                                 </div>
                                 <div class="mb-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <label class="form-label mb-0" for="opt_header_html">Header HTML Fragment</label>
-                                        <small class="text-muted" style="font-size: 11px;">Placeholders: <code>{page}</code>, <code>{pages}</code></small>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="opt_disable_header">Header Visibility</label>
+                                            <label class="sn-form-toggle" for="opt_disable_header">
+                                                <span class="sn-form-toggle__label">
+                                                    <i class="fa-solid fa-heading ic-primary"></i>
+                                                    <span>Disable Header</span>
+                                                </span>
+                                                <input class="form-check-input sn-switch" type="checkbox" role="switch" id="opt_disable_header">
+                                            </label>
+                                        </div>
                                     </div>
-                                    <textarea id="opt_header_html" class="form-control mb-3" rows="3" placeholder="<div style='text-align: center;'>Invoice Header</div>"></textarea>
-                                    <div class="row g-3">
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_header_height">Height</label>
-                                            <input type="text" id="opt_header_height" class="form-control" placeholder="20mm">
+                                    <div id="header-fields-wrapper">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label mb-0" for="opt_header_html">Header HTML Fragment</label>
+                                            <small class="text-muted" style="font-size: 11px;">Placeholders: <code>{page}</code>, <code>{pages}</code></small>
                                         </div>
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_header_spacing">Spacing</label>
-                                            <input type="text" id="opt_header_spacing" class="form-control" placeholder="4mm">
-                                        </div>
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_header_offset">Offset</label>
-                                            <input type="text" id="opt_header_offset" class="form-control" placeholder="0mm">
+                                        <textarea id="opt_header_html" class="form-control mb-3" rows="3" placeholder="<div style='text-align: center;'>Invoice Header</div>"></textarea>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_header_height">Height</label>
+                                                <input type="text" id="opt_header_height" class="form-control" placeholder="20mm">
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_header_spacing">Spacing</label>
+                                                <input type="text" id="opt_header_spacing" class="form-control" placeholder="4mm">
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_header_offset">Offset</label>
+                                                <input type="text" id="opt_header_offset" class="form-control" placeholder="0mm">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <label class="form-label mb-0" for="opt_footer_html">Footer HTML Fragment</label>
-                                        <small class="text-muted" style="font-size: 11px;">Placeholders: <code>{page} of {pages}</code></small>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="opt_disable_footer">Footer Visibility</label>
+                                            <label class="sn-form-toggle" for="opt_disable_footer">
+                                                <span class="sn-form-toggle__label">
+                                                    <i class="fa-solid fa-shoe-prints ic-primary"></i>
+                                                    <span>Disable Footer</span>
+                                                </span>
+                                                <input class="form-check-input sn-switch" type="checkbox" role="switch" id="opt_disable_footer">
+                                            </label>
+                                        </div>
                                     </div>
-                                    <textarea id="opt_footer_html" class="form-control mb-3" rows="3" placeholder="<div style='text-align: right; font-size: 10px;'>Page {page} of {pages}</div>"></textarea>
-                                    <div class="row g-3">
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_footer_height">Height</label>
-                                            <input type="text" id="opt_footer_height" class="form-control" placeholder="15mm">
+                                    <div id="footer-fields-wrapper">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label mb-0" for="opt_footer_html">Footer HTML Fragment</label>
+                                            <small class="text-muted" style="font-size: 11px;">Placeholders: <code>{page} of {pages}</code></small>
                                         </div>
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_footer_spacing">Spacing</label>
-                                            <input type="text" id="opt_footer_spacing" class="form-control" placeholder="4mm">
-                                        </div>
-                                        <div class="col-12 col-md-4">
-                                            <label class="form-label" for="opt_footer_offset">Offset</label>
-                                            <input type="text" id="opt_footer_offset" class="form-control" placeholder="0mm">
+                                        <textarea id="opt_footer_html" class="form-control mb-3" rows="3" placeholder="<div style='text-align: right; font-size: 10px;'>Page {page} of {pages}</div>"></textarea>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_footer_height">Height</label>
+                                                <input type="text" id="opt_footer_height" class="form-control" placeholder="15mm">
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_footer_spacing">Spacing</label>
+                                                <input type="text" id="opt_footer_spacing" class="form-control" placeholder="4mm">
+                                            </div>
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label" for="opt_footer_offset">Offset</label>
+                                                <input type="text" id="opt_footer_offset" class="form-control" placeholder="0mm">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1125,22 +1256,36 @@
                                 <div class="sn-form-card__title">
                                     <i class="fa-solid fa-stamp ic-warning"></i> Watermark & Content Override
                                 </div>
-                                <div class="row g-3 mb-3 align-items-end">
-                                    <div class="col-12 col-md-6">
-                                        <label class="form-label" for="opt_watermark_html">Watermark HTML / Text</label>
-                                        <input type="text" id="opt_watermark_html" class="form-control" placeholder="<h1 style='color:red;'>PAID</h1>">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="opt_disable_watermark">Watermark Visibility</label>
+                                        <label class="sn-form-toggle" for="opt_disable_watermark">
+                                            <span class="sn-form-toggle__label">
+                                                <i class="fa-solid fa-stamp ic-warning"></i>
+                                                <span>Disable Watermark</span>
+                                            </span>
+                                            <input class="form-check-input sn-switch" type="checkbox" role="switch" id="opt_disable_watermark">
+                                        </label>
                                     </div>
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_watermark_opacity">Opacity (0.0 - 1.0)</label>
-                                        <input type="number" step="0.05" min="0" max="1" id="opt_watermark_opacity" class="form-control" placeholder="0.15">
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label" for="opt_watermark_behind">Watermark Layer</label>
-                                        <select id="opt_watermark_behind" class="form-select sn-select2">
-                                            <option value="">Default (Behind)</option>
-                                            <option value="1">Behind Content</option>
-                                            <option value="0">Above Content</option>
-                                        </select>
+                                </div>
+                                <div id="watermark-fields-wrapper">
+                                    <div class="row g-3 mb-3 align-items-end">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="opt_watermark_html">Watermark HTML / Text</label>
+                                            <input type="text" id="opt_watermark_html" class="form-control" placeholder="<h1 style='color:red;'>PAID</h1>">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_watermark_opacity">Opacity (0.0 - 1.0)</label>
+                                            <input type="number" step="0.05" min="0" max="1" id="opt_watermark_opacity" class="form-control" placeholder="0.15">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label" for="opt_watermark_behind">Watermark Layer</label>
+                                            <select id="opt_watermark_behind" class="form-select sn-select2">
+                                                <option value="">Default (Behind)</option>
+                                                <option value="1">Behind Content</option>
+                                                <option value="0">Above Content</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1200,9 +1345,9 @@
                                     <div class="col-12 col-md-4">
                                         <label class="form-label" for="opt_with_viewer">Built-in PDF Viewer</label>
                                         <select id="opt_with_viewer" class="form-select sn-select2">
-                                            <option value="">Default (Disabled)</option>
+                                            <option value="">Default (Enabled)</option>
                                             <option value="1">Enabled</option>
-                                            <option value="0">Disabled</option>
+                                            <option value="0">Disabled (Raw Browser)</option>
                                         </select>
                                     </div>
                                     <div class="col-6 col-md-4">
@@ -1327,6 +1472,12 @@
                 allowClear: false
             });
 
+            $('#opt_prefer_css_page_size').select2({
+                dropdownParent: $('#templateModal'),
+                minimumResultsForSearch: Infinity,
+                allowClear: false
+            });
+
             $('#opt_watermark_behind').select2({
                 dropdownParent: $('#templateModal'),
                 minimumResultsForSearch: Infinity,
@@ -1350,6 +1501,31 @@
                 minimumResultsForSearch: Infinity,
                 allowClear: false
             });
+
+            // Disabling States Synchronization
+            function syncDisableStates() {
+                var disableHeader = $('#opt_disable_header').is(':checked');
+                $('#opt_disable_header').closest('.sn-form-toggle').toggleClass('is-checked', disableHeader);
+                $('#header-fields-wrapper').toggleClass('sn-disabled-block', disableHeader);
+                $('#header-fields-wrapper').find('input, textarea').prop('disabled', disableHeader);
+
+                var disableFooter = $('#opt_disable_footer').is(':checked');
+                $('#opt_disable_footer').closest('.sn-form-toggle').toggleClass('is-checked', disableFooter);
+                $('#footer-fields-wrapper').toggleClass('sn-disabled-block', disableFooter);
+                $('#footer-fields-wrapper').find('input, textarea').prop('disabled', disableFooter);
+
+                var disableWatermark = $('#opt_disable_watermark').is(':checked');
+                $('#opt_disable_watermark').closest('.sn-form-toggle').toggleClass('is-checked', disableWatermark);
+                $('#watermark-fields-wrapper').toggleClass('sn-disabled-block', disableWatermark);
+                $('#watermark-fields-wrapper').find('input, select').prop('disabled', disableWatermark);
+
+                var disableMargins = $('#opt_disable_margins').is(':checked');
+                $('#opt_disable_margins').closest('.sn-form-toggle').toggleClass('is-checked', disableMargins);
+                $('#margins-fields-wrapper').toggleClass('sn-disabled-block', disableMargins);
+                $('#margins-fields-wrapper').find('input').prop('disabled', disableMargins);
+            }
+
+            $('#opt_disable_header, #opt_disable_footer, #opt_disable_watermark, #opt_disable_margins').on('change', syncDisableStates);
 
             // Theme Management
             var currentTheme = localStorage.getItem('sn-pdf-theme') || 'dark';
@@ -1458,21 +1634,26 @@
                 add('orientation', $('#opt_orientation').val());
                 if ($('#opt_scale').val()) opts['scale'] = parseFloat($('#opt_scale').val());
                 if ($('#opt_smart_shrinking').val() !== '') opts['smartShrinking'] = $('#opt_smart_shrinking').val() === '1';
+                if ($('#opt_prefer_css_page_size').val() !== '') opts['preferCssPageSize'] = $('#opt_prefer_css_page_size').val() === '1';
+                if ($('#opt_disable_margins').is(':checked')) opts['disableMargins'] = true;
                 add('marginTop', $('#opt_margin_top').val());
                 add('marginBottom', $('#opt_margin_bottom').val());
                 add('marginLeft', $('#opt_margin_left').val());
                 add('marginRight', $('#opt_margin_right').val());
 
+                if ($('#opt_disable_header').is(':checked')) opts['disableHeader'] = true;
                 add('headerHtml', $('#opt_header_html').val());
                 add('headerHeight', $('#opt_header_height').val());
                 add('headerSpacing', $('#opt_header_spacing').val());
                 add('headerOffset', $('#opt_header_offset').val());
 
+                if ($('#opt_disable_footer').is(':checked')) opts['disableFooter'] = true;
                 add('footerHtml', $('#opt_footer_html').val());
                 add('footerHeight', $('#opt_footer_height').val());
                 add('footerSpacing', $('#opt_footer_spacing').val());
                 add('footerOffset', $('#opt_footer_offset').val());
 
+                if ($('#opt_disable_watermark').is(':checked')) opts['disableWatermark'] = true;
                 add('watermarkHtml', $('#opt_watermark_html').val());
                 if ($('#opt_watermark_opacity').val()) opts['watermarkOpacity'] = parseFloat($('#opt_watermark_opacity').val());
                 if ($('#opt_watermark_behind').val() !== '') opts['watermarkBehind'] = $('#opt_watermark_behind').val() === '1';
@@ -1517,21 +1698,28 @@
                     $('#opt_scale').val(opts.scale !== undefined ? opts.scale : '');
                     var ss = opts.smartShrinking !== undefined ? (opts.smartShrinking ? '1' : '0') : '';
                     $('#opt_smart_shrinking').val(ss).trigger('change');
+                    var pcs = opts.preferCssPageSize !== undefined ? (opts.preferCssPageSize ? '1' : '0') : '';
+                    $('#opt_prefer_css_page_size').val(pcs).trigger('change');
+
+                    $('#opt_disable_margins').prop('checked', Boolean(opts.disableMargins));
                     $('#opt_margin_top').val(opts.marginTop || '');
                     $('#opt_margin_bottom').val(opts.marginBottom || '');
                     $('#opt_margin_left').val(opts.marginLeft || '');
                     $('#opt_margin_right').val(opts.marginRight || '');
 
+                    $('#opt_disable_header').prop('checked', Boolean(opts.disableHeader));
                     $('#opt_header_html').val(opts.headerHtml || '');
                     $('#opt_header_height').val(opts.headerHeight || '');
                     $('#opt_header_spacing').val(opts.headerSpacing || '');
                     $('#opt_header_offset').val(opts.headerOffset || '');
 
+                    $('#opt_disable_footer').prop('checked', Boolean(opts.disableFooter));
                     $('#opt_footer_html').val(opts.footerHtml || '');
                     $('#opt_footer_height').val(opts.footerHeight || '');
                     $('#opt_footer_spacing').val(opts.footerSpacing || '');
                     $('#opt_footer_offset').val(opts.footerOffset || '');
 
+                    $('#opt_disable_watermark').prop('checked', Boolean(opts.disableWatermark));
                     $('#opt_watermark_html').val(opts.watermarkHtml || '');
                     $('#opt_watermark_opacity').val(opts.watermarkOpacity !== undefined ? opts.watermarkOpacity : '');
                     var wb = opts.watermarkBehind !== undefined ? (opts.watermarkBehind ? '1' : '0') : '';
@@ -1561,6 +1749,8 @@
                     Object.keys(cssVariables).forEach(function(name) {
                         addCssVarRow(name, cssVariables[name]);
                     });
+
+                    syncDisableStates();
                 } else {
                     $('#template_id').val('');
                     $('#modalTitle').text('New Template');
@@ -1573,6 +1763,11 @@
                     $('#opt_orientation').val('portrait').trigger('change');
                     $('#opt_watermark_behind').val('').trigger('change');
                     $('#opt_smart_shrinking').val('').trigger('change');
+                    $('#opt_prefer_css_page_size').val('').trigger('change');
+                    $('#opt_disable_margins').prop('checked', false);
+                    $('#opt_disable_header').prop('checked', false);
+                    $('#opt_disable_footer').prop('checked', false);
+                    $('#opt_disable_watermark').prop('checked', false);
                     $('#opt_with_viewer').val('').trigger('change');
                     $('#opt_theme').val('').trigger('change');
                     $('#opt_dir').val('').trigger('change');
@@ -1581,6 +1776,8 @@
                     $('#opt_font_path').val('');
                     $('#opt_font_stack').val('');
                     $('#css-vars-rows').empty();
+
+                    syncDisableStates();
                 }
             }
 
