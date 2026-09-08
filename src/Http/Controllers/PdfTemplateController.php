@@ -197,7 +197,7 @@ class PdfTemplateController extends Controller
 
         $pdf->applyTemplateOptions($options);
 
-        return $pdf->withViewer()->inline('template-preview.pdf');
+        return $pdf->inline('template-preview.pdf');
     }
 
     protected function resolveSupportedLocales(): array

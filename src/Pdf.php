@@ -1108,13 +1108,25 @@ class Pdf
 
     private function resolveTemplateOptions(string $view): array
     {
+        $config = $this->readConfig();
+        $configOptions = $config['options'] ?? $config['defaults'] ?? [];
+        if (! is_array($configOptions)) {
+            $configOptions = [];
+        }
+
         try {
-            return PdfTemplate::resolveOptionsForView(
+            $dbOptions = PdfTemplate::resolveOptionsForView(
                 $view,
                 function_exists('app') ? app()->getLocale() : 'en'
             );
+
+            if ($dbOptions !== []) {
+                return array_merge($configOptions, $dbOptions);
+            }
+
+            return $configOptions;
         } catch (Throwable) {
-            return [];
+            return $configOptions;
         }
     }
 
