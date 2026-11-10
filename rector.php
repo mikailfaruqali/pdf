@@ -1,7 +1,6 @@
 <?php
 
 use Rector\Config\RectorConfig;
-use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 use RectorLaravel\Rector\Coalesce\ApplyDefaultInsteadOfNullCoalesceRector;
 use RectorLaravel\Rector\Empty_\EmptyToBlankAndFilledFuncRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
@@ -19,11 +18,9 @@ return RectorConfig::configure()
         codeQuality: TRUE,
         codingStyle: TRUE,
         privatization: TRUE,
-        naming: TRUE,
         typeDeclarations: TRUE,
     )
     ->withRules([
-        DeclareStrictTypesRector::class,
         ApplyDefaultInsteadOfNullCoalesceRector::class,
         EmptyToBlankAndFilledFuncRector::class,
         RemoveDumpDataDeadCodeRector::class,

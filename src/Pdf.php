@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Traits\Conditionable;
 use PDF\Exceptions\PdfException;
 use PDF\Models\PdfTemplate;
@@ -46,6 +47,7 @@ class Pdf
         'footerSpacing' => 'footerSpacing',
         'headerOffset' => 'headerOffset',
         'footerOffset' => 'footerOffset',
+        'viewerView' => 'viewerView',
         'title' => 'title',
         'author' => 'author',
         'subject' => 'subject',
@@ -152,6 +154,10 @@ class Pdf
     private ?string $tempDirectory;
 
     private bool $withViewer = TRUE;
+
+    private string $viewerView = 'pdf::pdf-viewer';
+
+    private mixed $viewerCloseMessage;
 
     private ?string $fontPath = NULL;
 
@@ -658,6 +664,25 @@ class Pdf
         return $this->withViewer(FALSE);
     }
 
+    public function viewerView(string $view): self
+    {
+        $this->viewerView = $view;
+
+        return $this;
+    }
+
+    public function getViewerView(): string
+    {
+        return $this->viewerView;
+    }
+
+    public function viewerCloseMessage(mixed $message): self
+    {
+        $this->viewerCloseMessage = $message;
+
+        return $this;
+    }
+
     public function font(?string $path = NULL, ?string $family = NULL, ?string $stack = NULL): self
     {
         $this->fontPath = $path === NULL ? NULL : $this->normalizePath($path);
@@ -973,7 +998,8 @@ class Pdf
         $title = $this->getTitle()
             ?: pathinfo($formattedFilename, PATHINFO_FILENAME);
 
-        $html = view('pdf::pdf-viewer', [
+        $html = view($this->viewerView, [
+            'closeMessage' => $this->viewerCloseMessage,
             'font' => $fontDetails['base64'],
             'fontMime' => $this->fontMimeSubtype(),
             'fontFormat' => $this->fontFormat(),
@@ -1290,6 +1316,14 @@ class Pdf
         $this->timeout = isset($config['timeout']) ? (int) $config['timeout'] : 120;
         $this->tempDirectory = $config['temp_path'] ?? NULL;
         $this->icon = $config['icon'] ?? NULL;
+
+        $viewer = is_array($config['viewer'] ?? NULL) ? $config['viewer'] : [];
+
+        if (filled($viewer['view'] ?? NULL)) {
+            $this->viewerView = (string) $viewer['view'];
+        }
+
+        $this->viewerCloseMessage = $viewer['close_message'] ?? NULL;
 
         $defaultOptions = $config['options'] ?? $config['defaults'] ?? [];
         if (is_array($defaultOptions) && $defaultOptions !== []) {
@@ -1757,7 +1791,7 @@ class Pdf
         } finally {
             foreach ($tempFiles as $tempFile) {
                 if (file_exists($tempFile)) {
-                    @unlink($tempFile);
+                    File::delete($tempFile);
                 }
             }
         }

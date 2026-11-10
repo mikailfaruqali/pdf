@@ -23,7 +23,7 @@
     },
     "require-dev": {
         "driftingly/rector-laravel": "^2.4",
-        "laravel/pint": "^1.29",
+        "laravel/pint": "1.32.1",
         "orchestra/testbench": "^9.0|^10.0"
     },
     "autoload": {

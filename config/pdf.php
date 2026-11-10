@@ -50,6 +50,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | PDF Viewer
+    |--------------------------------------------------------------------------
+    |
+    | 'view' is the Blade view rendered by ->inline() when the viewer is on.
+    | Point it at your own view (e.g. 'pdf.viewer') to replace the built-in
+    | one. A custom view receives the same data: $base64, $filename, $title,
+    | $dir, $theme, $icon, $font, $fontMime, $fontFormat, $fontFamily,
+    | $fontStack and $closeMessage.
+    |
+    | 'close_message' controls the close button when the viewer is inside an
+    | iframe. When set, the viewer posts this value to the parent window
+    | (window.parent.postMessage) and lets the parent close the frame, e.g.
+    | ['snPageModal' => 'close']. When null, the viewer hides only the
+    | Bootstrap modal that contains its iframe, or posts
+    | { type: 'pdf-viewer:close' } when there is none.
+    |
+    */
+    'viewer' => [
+        'view' => env('PDF_VIEWER_VIEW', 'pdf::pdf-viewer'),
+        'close_message' => NULL,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Template UI Routes Enabled
     |--------------------------------------------------------------------------
     |

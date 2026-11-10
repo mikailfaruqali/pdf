@@ -511,10 +511,22 @@
                     return;
                 }
 
+                var closeMessage = @json($closeMessage ?? null);
+
+                if (closeMessage !== null) {
+                    window.parent.postMessage(closeMessage, '*');
+                    return;
+                }
+
                 try {
-                    if (window.parent.jQuery) {
-                        window.parent.jQuery('.modal').modal('hide');
-                        return;
+                    var frame = window.frameElement;
+                    var $ = window.parent.jQuery;
+                    if (frame && $) {
+                        var modal = $(frame).closest('.modal');
+                        if (modal.length) {
+                            modal.modal('hide');
+                            return;
+                        }
                     }
                 } catch (e) {
                 }

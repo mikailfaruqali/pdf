@@ -187,6 +187,36 @@ Supported font formats are detected from the file extension: `.ttf`, `.otf`, `.w
 ->icon('https://cdn.example.com/fav.ico')     // URL
 ```
 
+#### Custom viewer view
+
+Replace the built-in viewer with your own Blade view, globally in `config/pdf.php` or per call. The view gets the same data as the built-in one (`$base64`, `$filename`, `$title`, `$dir`, `$theme`, `$icon`, `$font`, `$fontMime`, `$fontFormat`, `$fontFamily`, `$fontStack`, `$closeMessage`).
+
+```php
+// config/pdf.php
+'viewer' => [
+    'view' => 'pdf.viewer',          // or env PDF_VIEWER_VIEW
+    'close_message' => null,
+],
+
+// per call
+->viewerView('pdf.viewer')
+```
+
+#### Closing the viewer from an iframe
+
+When the viewer is inside an iframe, the close button hides only the Bootstrap modal that contains that iframe; other modals on the page stay open. If there is no such modal, it posts `{ type: 'pdf-viewer:close' }` to the parent window.
+
+To let the parent page handle closing itself, set a message and the viewer posts it to `window.parent` instead:
+
+```php
+'viewer' => [
+    'close_message' => ['snPageModal' => 'close'],
+],
+
+// or per call
+->viewerCloseMessage(['snPageModal' => 'close'])
+```
+
 #### Conditional chaining
 
 The builder uses Laravel's `Conditionable` trait, so `when()` / `unless()` chain fluently — useful for driving the viewer from user or tenant settings:

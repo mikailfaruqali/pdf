@@ -124,7 +124,7 @@ class InstallCommand extends Command
             return self::FAILURE;
         } finally {
             if (File::exists($tempArchive)) {
-                @unlink($tempArchive);
+                File::delete($tempArchive);
             }
         }
     }
